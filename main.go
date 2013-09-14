@@ -42,8 +42,8 @@ func main() {
 		helper.TurnLoggingOff()
 	}
 
-	// Give the runtime 500 threads to play with
-	runtime.GOMAXPROCS(500)
+	// Give the runtime all the cores to use
+	runtime.GOMAXPROCS(runtime.NumCPU())
 
 	// Conver the number of routines for this run to an integer
 	numberOfRoutines, _ := strconv.Atoi(os.Args[1])
