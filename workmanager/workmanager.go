@@ -19,23 +19,23 @@ import (
 
 //** NEW TYPES
 
-// _WorkManager is responsible for starting and shutting down the program
-type _WorkManager struct {
+// workManager is responsible for starting and shutting down the program
+type workManager struct {
 	WorkPool    *workpool.WorkPool
 	Lock        *sync.Mutex
 	MaxRoutines int32
 	MaxQueued   int32
 }
 
-// _Work specifies the data required to perform the work
-type _Work struct {
+// work specifies the data required to perform the work
+type work struct {
 	WorkPool *workpool.WorkPool // Reference to the work pool
 	Wait     *sync.WaitGroup    // Channel used signal the work is done
 }
 
 //** SINGLETON REFERENCE
 
-var _This *_WorkManager // Reference to the singleton
+var _This *workManager // Reference to the singleton
 
 //** PUBLIC FUNCTIONS
 
@@ -43,7 +43,6 @@ var _This *_WorkManager // Reference to the singleton
 //  numberOfRoutines: The number of routines to use in the pool
 //  bufferSize: The maximum amount of work that can be stored
 func Startup(numberOfRoutines int, bufferSize int) (err error) {
-
 	defer helper.CatchPanic(&err, "main", "workmanager.Startup")
 
 	helper.WriteStdout("main", "workmanager.Startup", "Started")
@@ -52,7 +51,7 @@ func Startup(numberOfRoutines int, bufferSize int) (err error) {
 	mongo.Startup("main")
 
 	// Create the work manager and startup the Work Pool
-	_This = &_WorkManager{
+	_This = &workManager{
 		WorkPool:    workpool.New(numberOfRoutines, int32(bufferSize)),
 		Lock:        &sync.Mutex{},
 		MaxRoutines: 0,
@@ -60,13 +59,11 @@ func Startup(numberOfRoutines int, bufferSize int) (err error) {
 	}
 
 	helper.WriteStdout("main", "workmanager.Startup", "Completed")
-
 	return err
 }
 
 // Shutdown brings down the manager gracefully
 func Shutdown() (err error) {
-
 	defer helper.CatchPanic(&err, "main", "workmanager.Shutdown")
 
 	helper.WriteStdout("main", "workmanager.Shutdown", "Started")
@@ -78,7 +75,6 @@ func Shutdown() (err error) {
 	mongo.Shutdown("main")
 
 	helper.WriteStdout("main", "workmanager.Shutdown", "Completed")
-
 	return err
 }
 
@@ -91,9 +87,7 @@ func KeepLargest(routines int32, queued int32) {
 	unlocked := false
 
 	defer func() {
-
 		if unlocked == false {
-
 			_This.Lock.Unlock()
 		}
 	}()
@@ -103,13 +97,11 @@ func KeepLargest(routines int32, queued int32) {
 
 	// Keep the largest of the two
 	if routines > _This.MaxRoutines {
-
 		_This.MaxRoutines = routines
 	}
 
 	// Keep the largest of the two
 	if queued > _This.MaxQueued {
-
 		_This.MaxQueued = queued
 	}
 
@@ -121,7 +113,6 @@ func KeepLargest(routines int32, queued int32) {
 
 // Stats returns the max routine and queued values
 func Stats() (maxRoutines int32, maxQueued int32) {
-
 	return _This.MaxRoutines, _This.MaxQueued
 }
 
@@ -129,8 +120,7 @@ func Stats() (maxRoutines int32, maxQueued int32) {
 //  goRoutine: The name of the routine making the call
 //  wait: The wait group to signal the work is done
 func PostWork(goRoutine string, wait *sync.WaitGroup) {
-
-	work := &_Work{
+	work := &work{
 		WorkPool: _This.WorkPool,
 		Wait:     wait,
 	}
@@ -142,15 +132,12 @@ func PostWork(goRoutine string, wait *sync.WaitGroup) {
 
 // DoWork performs a radar update for an individual radar station
 //  workRoutine: Unique id associated with the routine
-func (this *_Work) DoWork(workRoutine int) {
-
+func (this *work) DoWork(workRoutine int) {
 	// Create a unique key for this routine for logging
 	goRountine := fmt.Sprintf("Rout_%.4d", workRoutine)
 
 	defer helper.CatchPanic(nil, goRountine, "workmanager.DoWork")
-
 	defer func() {
-
 		this.Wait.Done()
 	}()
 
@@ -163,7 +150,6 @@ func (this *_Work) DoWork(workRoutine int) {
 	mongoSession, err := mongo.CopySession(goRountine)
 
 	if err != nil {
-
 		helper.WriteStdoutf(goRountine, "workmanager.DoWork", "Completed : ERROR: %s", err)
 		return
 	}
@@ -186,7 +172,6 @@ func (this *_Work) DoWork(workRoutine int) {
 	helper.WriteStdout(goRountine, "workmanager.DoWork", "Info : Query Complete")
 
 	if err != nil {
-
 		helper.WriteStdoutf(goRountine, "workmanager.DoWork", "Completed : ERROR: %s", err)
 		return
 	}

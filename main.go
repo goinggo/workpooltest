@@ -29,16 +29,13 @@ import (
 
 // main is the starting point of the program
 func main() {
-
 	// Just verify we have the right number of arguments
 	if len(os.Args) != 3 {
-
 		fmt.Printf("workpooltest routines logging\nex. workpooltest 24 off\n")
 	}
 
 	// If the word on is in the second argument, turn on logging
 	if strings.Contains(os.Args[2], "on") != true {
-
 		helper.TurnLoggingOff()
 	}
 
@@ -59,7 +56,6 @@ func main() {
 
 	// Run the work five times to get an average
 	for runs := 0; runs < 5; runs++ {
-
 		// Used to identify when all the work is completed
 		waitGroup := sync.WaitGroup{}
 
@@ -68,7 +64,6 @@ func main() {
 
 		// Post the 100 database calls and get this program going
 		for count := 0; count < amountOfWork; count++ {
-
 			waitGroup.Add(1)
 			workmanager.PostWork("main", &waitGroup)
 		}
@@ -95,7 +90,6 @@ func main() {
 	// Calculate the total duration for all 5 runs
 	var totalDuration float64
 	for _, duration := range durations {
-
 		totalDuration = totalDuration + duration.Seconds()
 	}
 

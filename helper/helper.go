@@ -16,35 +16,29 @@ import (
 
 //** GLOBAL PACKAGE VARIABLES
 
-// _LoggingOn is a simple flag to turn logging on or off
-var _LoggingOn bool = true
+// loggingOn is a simple flag to turn logging on or off
+var loggingOn bool = true
 
 // TurnLoggingOff sets the logging flag to off
 func TurnLoggingOff() {
-
-	_LoggingOn = false
+	loggingOn = false
 }
 
 // _WriteStdout is used to write message directly stdout
 func WriteStdout(goRoutine string, functionName string, message string) {
-
-	if _LoggingOn == true {
-
+	if loggingOn == true {
 		fmt.Printf("%s : %s : %s : %s\n", time.Now().Format("2006-01-02T15:04:05.000"), goRoutine, functionName, message)
 	}
 }
 
 // _WriteStdoutf is used to write a formatted message directly stdout
 func WriteStdoutf(goRoutine string, functionName string, format string, a ...interface{}) {
-
 	WriteStdout(goRoutine, functionName, fmt.Sprintf(format, a...))
 }
 
 // CatchPanic is used to catch and display panics
 func CatchPanic(err *error, goRoutine string, function string) {
-
 	if r := recover(); r != nil {
-
 		// Capture the stack trace
 		buf := make([]byte, 10000)
 		runtime.Stack(buf, false)
@@ -52,7 +46,6 @@ func CatchPanic(err *error, goRoutine string, function string) {
 		WriteStdoutf(goRoutine, function, "PANIC Defered [%v] : Stack Trace : %v", r, string(buf))
 
 		if err != nil {
-
 			*err = fmt.Errorf("%v", r)
 		}
 	}

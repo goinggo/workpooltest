@@ -24,34 +24,32 @@ const (
 
 //** NEW TYPES
 
-// _MongoManager manages a connection and session
-type _MongoManager struct {
+// mongoManager manages a connection and session
+type mongoManager struct {
 	MongoDBDialInfo *mgo.DialInfo // The connection information
 	MongoSession    *mgo.Session
 }
 
 //** SINGLETON REFERENCE
 
-var _This *_MongoManager // Reference to the singleton
+var _This *mongoManager // Reference to the singleton
 
 //** PUBLIC FUNCTIONS
 
 // Startup brings the manager to a running state
 //  goRoutine: The name of the routine running the code
 func Startup(goRoutine string) (err error) {
-
 	defer helper.CatchPanic(&err, goRoutine, "Startup")
 
 	helper.WriteStdout(goRoutine, "mongo.Startup", "Started")
 
 	if err != nil {
-
 		helper.WriteStdoutf(goRoutine, "mongo.Startup", "Completed : ERROR : %s", err)
 		return err
 	}
 
 	// Create the singleton
-	_This = &_MongoManager{
+	_This = &mongoManager{
 		MongoDBDialInfo: &mgo.DialInfo{
 			Addrs:    []string{MONGODB_HOST},
 			Timeout:  10 * time.Second,
@@ -65,14 +63,12 @@ func Startup(goRoutine string) (err error) {
 	_This.MongoSession, err = GetSession(goRoutine)
 
 	helper.WriteStdout(goRoutine, "mongo.Startup", "Completed")
-
 	return err
 }
 
 // Shutdown systematically brings the manager down gracefully
 //  goRoutine: The name of the routine running the code
 func Shutdown(goRoutine string) (err error) {
-
 	defer helper.CatchPanic(&err, goRoutine, "Shutdown")
 
 	helper.WriteStdout(goRoutine, "mongo.Shutdown", "Started")
@@ -81,7 +77,6 @@ func Shutdown(goRoutine string) (err error) {
 	CloseSession(goRoutine, _This.MongoSession)
 
 	helper.WriteStdout(goRoutine, "mongo.Shutdown", "Completed")
-
 	return err
 }
 
@@ -89,7 +84,6 @@ func Shutdown(goRoutine string) (err error) {
 //  goRoutine: The name of the routine running the code
 //  mongoSession: The session to use to make the call
 func GetSession(goRoutine string) (mongoSession *mgo.Session, err error) {
-
 	defer helper.CatchPanic(&err, goRoutine, "GetSession")
 
 	helper.WriteStdout(goRoutine, "mongo.GetSession", "Started")
@@ -98,7 +92,6 @@ func GetSession(goRoutine string) (mongoSession *mgo.Session, err error) {
 	mongoSession, err = mgo.DialWithInfo(_This.MongoDBDialInfo)
 
 	if err != nil {
-
 		helper.WriteStdoutf(goRoutine, "mongo.GetSession", "ERROR : %s", err)
 		return nil, err
 	}
@@ -115,14 +108,12 @@ func GetSession(goRoutine string) (mongoSession *mgo.Session, err error) {
 	mongoSession.SetSyncTimeout(10 * time.Second)
 
 	helper.WriteStdout(goRoutine, "mongo.GetSession", "Completed")
-
 	return mongoSession, err
 }
 
 // CopySession get a new connection based on an existing connection
 //  goRoutine: The name of the routine running the code
 func CopySession(goRoutine string) (mongoSession *mgo.Session, err error) {
-
 	defer helper.CatchPanic(&err, goRoutine, "GetSession")
 
 	helper.WriteStdout(goRoutine, "mongo.GetSession", "Started")
@@ -131,7 +122,6 @@ func CopySession(goRoutine string) (mongoSession *mgo.Session, err error) {
 	mongoSession = _This.MongoSession.Copy()
 
 	helper.WriteStdout(goRoutine, "mongo.GetSession", "Completed")
-
 	return mongoSession, err
 }
 
@@ -139,7 +129,6 @@ func CopySession(goRoutine string) (mongoSession *mgo.Session, err error) {
 //  goRoutine: The name of the routine running the code
 //  mongoSession: The session to use to make the call
 func CloseSession(goRoutine string, mongoSession *mgo.Session) {
-
 	defer helper.CatchPanic(nil, goRoutine, "CloseSession")
 
 	helper.WriteStdout(goRoutine, "mongo.CloseSession", "Started")
@@ -154,7 +143,6 @@ func CloseSession(goRoutine string, mongoSession *mgo.Session) {
 //  mongoSession: The session to use to make the call
 //  collectionName: The name of the collection to access
 func GetCollection(mongoSession *mgo.Session, collectionName string) (collection *mgo.Collection) {
-
 	// Access the specified collection
 	return mongoSession.DB(MONGODB_DATABASE).C(collectionName)
 }
