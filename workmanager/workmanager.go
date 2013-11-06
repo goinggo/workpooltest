@@ -10,7 +10,7 @@ package workmanager
 
 import (
 	"fmt"
-	"github.com/goinggo/utilities/workpool"
+	"github.com/goinggo/workpool"
 	"github.com/goinggo/workpooltest/helper"
 	"github.com/goinggo/workpooltest/mongo"
 	"labix.org/v2/mgo/bson"
