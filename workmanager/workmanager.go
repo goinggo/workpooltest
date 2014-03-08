@@ -1,5 +1,5 @@
 // Copyright 2013 Ardan Studios. All rights reserved.
-// Use of this source code is governed by a BSD-style
+// Use of work source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
 /*
@@ -92,7 +92,7 @@ func KeepLargest(routines int32, queued int32) {
 		}
 	}()
 
-	// We need this to be routine safe
+	// We need work to be routine safe
 	_This.Lock.Lock()
 
 	// Keep the largest of the two
@@ -132,19 +132,19 @@ func PostWork(goRoutine string, wait *sync.WaitGroup) {
 
 // DoWork performs a radar update for an individual radar station
 //  workRoutine: Unique id associated with the routine
-func (this *work) DoWork(workRoutine int) {
-	// Create a unique key for this routine for logging
+func (work *work) DoWork(workRoutine int) {
+	// Create a unique key for work routine for logging
 	goRountine := fmt.Sprintf("Rout_%.4d", workRoutine)
 
 	defer helper.CatchPanic(nil, goRountine, "workmanager.DoWork")
 	defer func() {
-		this.Wait.Done()
+		work.Wait.Done()
 	}()
 
 	// Take a snapshot of the work pool stats and keep the largest
-	KeepLargest(this.WorkPool.ActiveRoutines(), this.WorkPool.QueuedWork())
+	KeepLargest(work.WorkPool.ActiveRoutines(), work.WorkPool.QueuedWork())
 
-	helper.WriteStdoutf(goRountine, "workmanager.DoWork", "Started : QW: %d - AR: %d", this.WorkPool.QueuedWork(), this.WorkPool.ActiveRoutines())
+	helper.WriteStdoutf(goRountine, "workmanager.DoWork", "Started : QW: %d - AR: %d", work.WorkPool.QueuedWork(), work.WorkPool.ActiveRoutines())
 
 	// Grab a mongo session
 	mongoSession, err := mongo.CopySession(goRountine)
@@ -176,5 +176,5 @@ func (this *work) DoWork(workRoutine int) {
 		return
 	}
 
-	helper.WriteStdoutf(goRountine, "workmanager.DoWork", "Completed : FOUND %d Stations : QW: %d - AR: %d", len(buoyStations), this.WorkPool.QueuedWork(), this.WorkPool.ActiveRoutines())
+	helper.WriteStdoutf(goRountine, "workmanager.DoWork", "Completed : FOUND %d Stations : QW: %d - AR: %d", len(buoyStations), work.WorkPool.QueuedWork(), work.WorkPool.ActiveRoutines())
 }

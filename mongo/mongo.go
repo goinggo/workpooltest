@@ -32,7 +32,7 @@ type mongoManager struct {
 
 //** SINGLETON REFERENCE
 
-var _This *mongoManager // Reference to the singleton
+var singleton *mongoManager // Reference to the singleton
 
 //** PUBLIC FUNCTIONS
 
@@ -49,7 +49,7 @@ func Startup(goRoutine string) (err error) {
 	}
 
 	// Create the singleton
-	_This = &mongoManager{
+	singleton = &mongoManager{
 		MongoDBDialInfo: &mgo.DialInfo{
 			Addrs:    []string{MONGODB_HOST},
 			Timeout:  10 * time.Second,
@@ -60,7 +60,7 @@ func Startup(goRoutine string) (err error) {
 	}
 
 	// Capture a master session for use
-	_This.MongoSession, err = GetSession(goRoutine)
+	singleton.MongoSession, err = GetSession(goRoutine)
 
 	helper.WriteStdout(goRoutine, "mongo.Startup", "Completed")
 	return err
@@ -74,7 +74,7 @@ func Shutdown(goRoutine string) (err error) {
 	helper.WriteStdout(goRoutine, "mongo.Shutdown", "Started")
 
 	// Close the master session
-	CloseSession(goRoutine, _This.MongoSession)
+	CloseSession(goRoutine, singleton.MongoSession)
 
 	helper.WriteStdout(goRoutine, "mongo.Shutdown", "Completed")
 	return err
@@ -89,7 +89,7 @@ func GetSession(goRoutine string) (mongoSession *mgo.Session, err error) {
 	helper.WriteStdout(goRoutine, "mongo.GetSession", "Started")
 
 	// Establish a session MongoDB
-	mongoSession, err = mgo.DialWithInfo(_This.MongoDBDialInfo)
+	mongoSession, err = mgo.DialWithInfo(singleton.MongoDBDialInfo)
 
 	if err != nil {
 		helper.WriteStdoutf(goRoutine, "mongo.GetSession", "ERROR : %s", err)
@@ -119,7 +119,7 @@ func CopySession(goRoutine string) (mongoSession *mgo.Session, err error) {
 	helper.WriteStdout(goRoutine, "mongo.GetSession", "Started")
 
 	// Copy the master session
-	mongoSession = _This.MongoSession.Copy()
+	mongoSession = singleton.MongoSession.Copy()
 
 	helper.WriteStdout(goRoutine, "mongo.GetSession", "Completed")
 	return mongoSession, err
