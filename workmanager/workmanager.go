@@ -2,10 +2,8 @@
 // Use of work source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-/*
-	This package implements the WorkManager singleton. This manager
-	controls the processing of work.
-*/
+// Package workmanager implements the WorkManager singleton. This manager
+// controls the processing of work.
 package workmanager
 
 import (
@@ -17,9 +15,7 @@ import (
 	"sync"
 )
 
-//** NEW TYPES
-
-// workManager is responsible for starting and shutting down the program
+// workManager is responsible for starting and shutting down the program.
 type workManager struct {
 	WorkPool    *workpool.WorkPool
 	Lock        *sync.Mutex
@@ -27,31 +23,27 @@ type workManager struct {
 	MaxQueued   int32
 }
 
-// work specifies the data required to perform the work
+// work specifies the data required to perform the work.
 type work struct {
-	WorkPool *workpool.WorkPool // Reference to the work pool
-	Wait     *sync.WaitGroup    // Channel used signal the work is done
+	WorkPool *workpool.WorkPool // Reference to the work pool.
+	Wait     *sync.WaitGroup    // Channel used signal the work is done.
 }
 
-//** SINGLETON REFERENCE
-
-var _This *workManager // Reference to the singleton
+var wm workManager // Reference to the singleton
 
 //** PUBLIC FUNCTIONS
 
-// Startup brings the manager to a running state
-//  numberOfRoutines: The number of routines to use in the pool
-//  bufferSize: The maximum amount of work that can be stored
-func Startup(numberOfRoutines int, bufferSize int) (err error) {
+// Startup brings the manager to a running state.
+func Startup(numberOfRoutines int, bufferSize int) error {
+	var err error
 	defer helper.CatchPanic(&err, "main", "workmanager.Startup")
-
 	helper.WriteStdout("main", "workmanager.Startup", "Started")
 
 	// Startup Mongo Support
 	mongo.Startup("main")
 
 	// Create the work manager and startup the Work Pool
-	_This = &workManager{
+	wm = workManager{
 		WorkPool:    workpool.New(numberOfRoutines, int32(bufferSize)),
 		Lock:        &sync.Mutex{},
 		MaxRoutines: 0,
@@ -63,13 +55,13 @@ func Startup(numberOfRoutines int, bufferSize int) (err error) {
 }
 
 // Shutdown brings down the manager gracefully
-func Shutdown() (err error) {
+func Shutdown() error {
+	var err error
 	defer helper.CatchPanic(&err, "main", "workmanager.Shutdown")
-
 	helper.WriteStdout("main", "workmanager.Shutdown", "Started")
 
 	// Shutdown the Work Pool
-	_This.WorkPool.Shutdown("main")
+	wm.WorkPool.Shutdown("main")
 
 	// Shutdown Mongo Support
 	mongo.Shutdown("main")
@@ -82,64 +74,43 @@ func Shutdown() (err error) {
 //  routines: The number of routines to compare
 //  queued: The number of queued work to compare
 func KeepLargest(routines int32, queued int32) {
-
-	// Flag to indicate if the lock has been released
-	unlocked := false
-
-	defer func() {
-		if unlocked == false {
-			_This.Lock.Unlock()
-		}
-	}()
-
-	// We need work to be routine safe
-	_This.Lock.Lock()
+	// We need work to be routine safe.
+	wm.Lock.Lock()
+	defer wm.Lock.Unlock()
 
 	// Keep the largest of the two
-	if routines > _This.MaxRoutines {
-		_This.MaxRoutines = routines
+	if routines > wm.MaxRoutines {
+		wm.MaxRoutines = routines
 	}
 
 	// Keep the largest of the two
-	if queued > _This.MaxQueued {
-		_This.MaxQueued = queued
+	if queued > wm.MaxQueued {
+		wm.MaxQueued = queued
 	}
-
-	// Release the lock quickly. I don't want to
-	// wait for the defer
-	_This.Lock.Unlock()
-	unlocked = true
 }
 
-// Stats returns the max routine and queued values
+// Stats returns the max routine and queued values.
 func Stats() (maxRoutines int32, maxQueued int32) {
-	return _This.MaxRoutines, _This.MaxQueued
+	return wm.MaxRoutines, wm.MaxQueued
 }
 
-// PostWork puts work into the work pool for processing
-//  goRoutine: The name of the routine making the call
-//  wait: The wait group to signal the work is done
+// PostWork puts work into the work pool for processing.
 func PostWork(goRoutine string, wait *sync.WaitGroup) {
-	work := &work{
-		WorkPool: _This.WorkPool,
+	work := work{
+		WorkPool: wm.WorkPool,
 		Wait:     wait,
 	}
 
-	_This.WorkPool.PostWork(goRoutine, work)
+	wm.WorkPool.PostWork(goRoutine, &work)
 }
 
-//** PRIVATE WORK FUNCTIONS
-
-// DoWork performs a radar update for an individual radar station
-//  workRoutine: Unique id associated with the routine
+// DoWork performs a radar update for an individual radar station.
 func (work *work) DoWork(workRoutine int) {
 	// Create a unique key for work routine for logging
 	goRountine := fmt.Sprintf("Rout_%.4d", workRoutine)
 
 	defer helper.CatchPanic(nil, goRountine, "workmanager.DoWork")
-	defer func() {
-		work.Wait.Done()
-	}()
+	defer work.Wait.Done()
 
 	// Take a snapshot of the work pool stats and keep the largest
 	KeepLargest(work.WorkPool.ActiveRoutines(), work.WorkPool.QueuedWork())
@@ -148,7 +119,6 @@ func (work *work) DoWork(workRoutine int) {
 
 	// Grab a mongo session
 	mongoSession, err := mongo.CopySession(goRountine)
-
 	if err != nil {
 		helper.WriteStdoutf(goRountine, "workmanager.DoWork", "Completed : ERROR: %s", err)
 		return
@@ -166,12 +136,8 @@ func (work *work) DoWork(workRoutine int) {
 	helper.WriteStdout(goRountine, "workmanager.DoWork", "Info : Performing Query")
 
 	// Capture all of the buoys
-	buoyStations := []bson.M{}
-	err = query.All(&buoyStations)
-
-	helper.WriteStdout(goRountine, "workmanager.DoWork", "Info : Query Complete")
-
-	if err != nil {
+	var buoyStations []bson.M
+	if err = query.All(&buoyStations); err != nil {
 		helper.WriteStdoutf(goRountine, "workmanager.DoWork", "Completed : ERROR: %s", err)
 		return
 	}
